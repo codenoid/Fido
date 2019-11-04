@@ -1,0 +1,12 @@
+[package]
+name = "Fido"
+version = "0.1.0"
+authors = ["codenoid <14269809+codenoid@users.noreply.github.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+walkdir = "2"
+clap = "2.33.0"
+nix = "0.15.0"
