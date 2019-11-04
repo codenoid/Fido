@@ -40,25 +40,30 @@ fn main() {
     let path = matches.value_of("path").unwrap();
     let brick_path = matches.value_of("bricks").unwrap();
 
-    for entry in WalkDir::new(path).min_depth(1).into_iter().filter_map(|e| e.ok()) {
-        if entry.path_is_symlink() == false {
+    if cmd == "0" {
+        // bricks = /data/ -> /data/brick-1
+        for brick in WalkDir::new(brick_path.clone().to_string()).min_depth(1).into_iter().filter_map(|e| e.ok()) {
+        	let listed_path = brick.path().display().to_string();
+        	let pure_path = listed_path.replace(brick_path.clone(), "");
 
-        	if cmd == "0" {
-        		let file_path = entry.path().display();
-
-        		// bricks = /data/ -> /data/brick-1
-        		for entry in WalkDir::new(path).min_depth(1).into_iter().filter_map(|e| e.ok()) {
-        	}
-
-        	if cmd == "1" {
-	        	get_brick = get_available_brick(brick_path);
-	        	if get_brick == "" {
-	        		println!("FATAL!!!! NEED MORE BRICK !!!");
-	        		::std::process::exit(1)
-	        	}
-        	}
-
+        	// gerimis, mau balik
+        	let build_symlink_path = path + pure_path
+            println!("file path : {:?}", pure_path);
         }
+    }
+
+    if cmd == "1" {
+	    for entry in WalkDir::new(path).min_depth(1).into_iter().filter_map(|e| e.ok()) {
+	        if entry.path_is_symlink() == false {
+                let get_brick = get_available_brick(brick_path.clone().to_string());
+                if get_brick == "" {
+                    println!("FATAL!!!! NEED MORE BRICK !!!");
+                    ::std::process::exit(1)
+                }
+
+                let file_path = entry.path().display();
+	        }
+	    }
     }
 
     println!("{}", cmd);
@@ -77,13 +82,12 @@ fn is_available(path: String) -> bool {
 
 fn get_available_brick(path: String) -> String {
     for entry in WalkDir::new(path).min_depth(1).max_depth(1).into_iter().filter_map(|e| e.ok()) {
-    	if entry.file_type().is_dir() {
-    		let brick_path = entry.path().display().to_string();
-    		println!("brick path : {}", brick_path);
-    		if is_available(brick_path.clone()) {
-    			return brick_path
-    		}
-    	}
+        if entry.file_type().is_dir() {
+            let brick_path = entry.path().display().to_string();
+            if is_available(brick_path.clone()) {
+                return brick_path
+            }
+        }
     }
     return String::from("");
 }
