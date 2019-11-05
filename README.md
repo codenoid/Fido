@@ -1,5 +1,13 @@
-# [WIP]Fido
+# Fido
 E2E Solution for your distributed file storage
+
+## Real-World use case
+
+1. you need to download a file, many files, a bunch of file from your scraper
+2. one disk is not enough, you always need more
+3. then you decide to use Fido with Systemd
+4. Fido will automatically distribute your files into selected external disk
+5. When your files getting bigger again, just add external disk again to your server
 
 ## Installation
 
