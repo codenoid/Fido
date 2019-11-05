@@ -95,19 +95,31 @@ fn main() {
                 if md.is_dir() {
                     ::std::fs::create_dir_all(move_path);
                 } else {
-                    ::std::fs::rename(listed_path.clone(), move_path.clone());
+                	// doesn't work with different mount point
+                    // ::std::fs::rename(listed_path.clone(), move_path.clone());
 
-                    let args = &["-s", &move_path, &listed_path];
-
-                    let status = ::std::process::Command::new("/bin/ln")
-                        .args(args)
+                    let move_file = ::std::process::Command::new("/bin/mv")
+                        .arg(listed_path.clone())
+                        .arg(move_path.clone())
                         .status()
                         .expect("failed to execute process");
 
-                    if status.success() {
-                        println!("{}", "[INFO] Successfully linkin path...".green().on_black());
+                    if move_file.success() {
+	                    let args = &["-s", &move_path, &listed_path];
+
+	                    let status = ::std::process::Command::new("/bin/ln")
+	                        .args(args)
+	                        .status()
+	                        .expect("failed to execute process");
+
+	                    if status.success() {
+	                        println!("{}", "[INFO] Successfully linkin path...".green().on_black());
+	                    } else {
+	                        println!("{}", "[INFO] Path linkin failed...".blue());
+	                    }
                     } else {
-                        println!("{}", "[INFO] Path linkin failed...".blue());
+                    	println!("{}", "[ERROR] Failed to mv file...".red());
+                    	::std::process::exit(1);
                     }
                 }
             }
