@@ -1,5 +1,3 @@
-extern crate clap;
-
 use walkdir::WalkDir;
 use clap::{Arg, App};
 use nix::sys::statvfs::statvfs;
@@ -40,15 +38,35 @@ fn main() {
     let path = matches.value_of("path").unwrap();
     let brick_path = matches.value_of("bricks").unwrap();
 
+    if path.clone().chars().last().unwrap() != '/' {
+    	println!("the end of --path must be /");
+    	::std::process::exit(1);
+    }
+
     if cmd == "0" {
         // bricks = /data/ -> /data/brick-1
         for brick in WalkDir::new(brick_path.clone().to_string()).min_depth(1).into_iter().filter_map(|e| e.ok()) {
         	let listed_path = brick.path().display().to_string();
         	let pure_path = listed_path.replace(brick_path.clone(), "");
 
-        	// gerimis, mau balik
-        	let build_symlink_path = path + pure_path
-            println!("file path : {:?}", pure_path);
+        	if brick.file_type().is_dir() {
+        		let listed_folder = format!("{}{}", path, pure_path);
+        		println!("[INFO] mkdir -p folder : {}", listed_folder);
+        		::std::fs::create_dir_all(listed_folder);
+        	} else {
+	        	// gerimis, mau balik, lanjut di rumah
+	        	let build_symlink_path = format!("{}{}", path, pure_path);
+	            println!("[INFO] ln -s : {}", build_symlink_path);
+
+	            let args = &["-s", &listed_path, &build_symlink_path];
+
+				let status = ::std::process::Command::new("/bin/ln")
+                    .args(args)
+                    .status()
+                    .expect("failed to execute process");
+
+                println!("[INFO] success : {}", status.success());
+        	}
         }
     }
 
@@ -58,7 +76,7 @@ fn main() {
                 let get_brick = get_available_brick(brick_path.clone().to_string());
                 if get_brick == "" {
                     println!("FATAL!!!! NEED MORE BRICK !!!");
-                    ::std::process::exit(1)
+                    ::std::process::exit(1);
                 }
 
                 let file_path = entry.path().display();
