@@ -28,7 +28,7 @@ fn main() {
                 .takes_value(true)
                 .help("path to be mirrored"))
         .arg(Arg::with_name("bricks")
-                .required(false)
+                .required(true)
                 .short("b")
                 .long("bricks")
                 .takes_value(true)
