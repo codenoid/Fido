@@ -1,6 +1,7 @@
-use walkdir::WalkDir;
+use colored::*;
 use clap::{Arg, App};
 use nix::sys::statvfs::statvfs;
+use walkdir::WalkDir;
 
 macro_rules! cast {
     ($x:expr) => {
@@ -65,7 +66,11 @@ fn main() {
                     .status()
                     .expect("failed to execute process");
 
-                println!("[INFO] success : {}", status.success());
+                if status.success() {
+                	println!("{}", "[INFO] Successfully linkin path...".green().on_black());
+                } else {
+                	println!("{}", "[INFO] Path linkin failed...".blue());
+                }
         	}
         }
     }
