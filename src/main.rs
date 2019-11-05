@@ -40,56 +40,79 @@ fn main() {
     let brick_path = matches.value_of("bricks").unwrap();
 
     if path.clone().chars().last().unwrap() != '/' {
-    	println!("the end of --path must be /");
-    	::std::process::exit(1);
+        println!("the end of --path must be /");
+        ::std::process::exit(1);
     }
 
     if cmd == "0" {
         // bricks = /data/ -> /data/brick-1
         for brick in WalkDir::new(brick_path.clone().to_string()).min_depth(1).into_iter().filter_map(|e| e.ok()) {
-        	let listed_path = brick.path().display().to_string();
-        	let pure_path = listed_path.replace(brick_path.clone(), "");
+            let listed_path = brick.path().display().to_string();
+            let pure_path = listed_path.replace(brick_path.clone(), "");
 
-        	if brick.file_type().is_dir() {
-        		let listed_folder = format!("{}{}", path, pure_path);
-        		println!("[INFO] mkdir -p folder : {}", listed_folder);
-        		::std::fs::create_dir_all(listed_folder);
-        	} else {
-	        	// gerimis, mau balik, lanjut di rumah
-	        	let build_symlink_path = format!("{}{}", path, pure_path);
-	            println!("[INFO] ln -s : {}", build_symlink_path);
+            if brick.file_type().is_dir() {
+                let listed_folder = format!("{}{}", path, pure_path);
+                println!("[INFO] mkdir -p folder : {}", listed_folder);
+                ::std::fs::create_dir_all(listed_folder);
+            } else {
+                // gerimis, mau balik, lanjut di rumah
+                let build_symlink_path = format!("{}{}", path, pure_path);
+                println!("[INFO] ln -s : {}", build_symlink_path);
 
-	            let args = &["-s", &listed_path, &build_symlink_path];
+                let args = &["-s", &listed_path, &build_symlink_path];
 
-				let status = ::std::process::Command::new("/bin/ln")
+                let status = ::std::process::Command::new("/bin/ln")
                     .args(args)
                     .status()
                     .expect("failed to execute process");
 
                 if status.success() {
-                	println!("{}", "[INFO] Successfully linkin path...".green().on_black());
+                    println!("{}", "[INFO] Successfully linkin path...".green().on_black());
                 } else {
-                	println!("{}", "[INFO] Path linkin failed...".blue());
+                    println!("{}", "[INFO] Path linkin failed...".blue());
                 }
-        	}
+            }
         }
     }
 
     if cmd == "1" {
-	    for entry in WalkDir::new(path).min_depth(1).into_iter().filter_map(|e| e.ok()) {
-	        if entry.path_is_symlink() == false {
+        for entry in WalkDir::new(path).min_depth(1).into_iter().filter_map(|e| e.ok()) {
+            if entry.path_is_symlink() == false {
                 let get_brick = get_available_brick(brick_path.clone().to_string());
                 if get_brick == "" {
                     println!("FATAL!!!! NEED MORE BRICK !!!");
                     ::std::process::exit(1);
                 }
 
-                let file_path = entry.path().display();
-	        }
-	    }
-    }
+                let listed_path = entry.path().display().to_string();
+                let pure_path = listed_path.replace(path, "");
 
-    println!("{}", cmd);
+                // brick_path + pure path
+                let move_path = format!("{}/{}", get_brick, pure_path);
+
+                let md = ::std::fs::metadata(listed_path.clone()).unwrap();
+
+                if md.is_dir() {
+                    ::std::fs::create_dir_all(move_path);
+                } else {
+                    ::std::fs::rename(listed_path.clone(), move_path.clone());
+
+                    let args = &["-s", &move_path, &listed_path];
+
+                    let status = ::std::process::Command::new("/bin/ln")
+                        .args(args)
+                        .status()
+                        .expect("failed to execute process");
+
+                    if status.success() {
+                        println!("{}", "[INFO] Successfully linkin path...".green().on_black());
+                    } else {
+                        println!("{}", "[INFO] Path linkin failed...".blue());
+                    }
+                }
+            }
+        }
+    }
 }
 
 fn is_available(path: String) -> bool {
