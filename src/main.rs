@@ -12,7 +12,7 @@ macro_rules! cast {
 fn main() {
 
     let matches = App::new("Fido")
-        .version("0.1.0")
+        .version("0.1.2")
         .author("codenoid <jihantoro@pm.me>")
         .about("This app help you build a distributed data store")
         .arg(Arg::with_name("cmd")
