@@ -70,11 +70,7 @@ fn main() {
             let listed_path = brick.path().display().to_string();
             let pure_path = listed_path.replace(brick_path.clone(), "");
 
-            if brick.file_type().is_dir() {
-                let listed_folder = format!("{}{}", path, pure_path);
-                println!("[INFO] mkdir -p folder : {}", listed_folder);
-                ::std::fs::create_dir_all(listed_folder).unwrap();
-            } else {
+            if !brick.file_type().is_dir() {
                 // gerimis, mau balik, lanjut di rumah
                 println!("[INFO] ln -s : {}", pure_path);
 
