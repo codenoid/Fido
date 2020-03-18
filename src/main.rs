@@ -1,9 +1,9 @@
+use bson::doc;
+use clap::{App, Arg};
 use colored::*;
-use clap::{Arg, App};
+use mongodb::{options::ClientOptions, Client};
 use nix::sys::statvfs::statvfs;
 use walkdir::WalkDir;
-use mongodb::{Client, options::ClientOptions};
-use bson::{doc};
 
 macro_rules! cast {
     ($x:expr) => {
@@ -12,7 +12,6 @@ macro_rules! cast {
 }
 
 fn main() {
-
     let matches = App::new("Fido")
         .version("0.1.2")
         .author("codenoid <jihantoro@pm.me>")
@@ -48,11 +47,11 @@ fn main() {
 
     // Parse a connection string into an options struct.
     let mut client_options = match ClientOptions::parse("mongodb://localhost:27017") {
-    	Ok(expr) => expr,
-    	Err(_e) => {
-    		println!("{:?}", "EXITTTTT BRROOO");
-    		::std::process::exit(1)
-    	},
+        Ok(expr) => expr,
+        Err(_e) => {
+            println!("{:?}", "EXITTTTT BRROOO");
+            ::std::process::exit(1)
+        }
     };
 
     // Manually set an option.
@@ -60,13 +59,17 @@ fn main() {
 
     // Get a handle to the deployment.
     let database = match Client::with_options(client_options) {
-    	Ok(result) => result.database("fido_meta") ,
-    	Err(_e) => ::std::process::exit(1),
+        Ok(result) => result.database("fido_meta"),
+        Err(_e) => ::std::process::exit(1),
     };
 
     if cmd == "0" {
         // bricks = /data/ -> /data/brick-1
-        for brick in WalkDir::new(brick_path.clone().to_string()).min_depth(1).into_iter().filter_map(|e| e.ok()) {
+        for brick in WalkDir::new(brick_path.clone().to_string())
+            .min_depth(1)
+            .into_iter()
+            .filter_map(|e| e.ok())
+        {
             let listed_path = brick.path().display().to_string();
             let pure_path = listed_path.replace(brick_path.clone(), "");
 
@@ -87,7 +90,10 @@ fn main() {
                     .expect("failed to execute process");
 
                 if status.success() {
-                    println!("{}", "[INFO] Successfully linkin path...".green().on_black());
+                    println!(
+                        "{}",
+                        "[INFO] Successfully linkin path...".green().on_black()
+                    );
                 } else {
                     println!("{}", "[INFO] Path linkin failed...".blue());
                 }
@@ -96,22 +102,25 @@ fn main() {
     }
 
     if cmd == "1" {
-        for entry in WalkDir::new(path).min_depth(1).into_iter().filter_map(|e| e.ok()) {
-
+        for entry in WalkDir::new(path)
+            .min_depth(1)
+            .into_iter()
+            .filter_map(|e| e.ok())
+        {
             let listed_path = entry.path().display().to_string();
             let pure_path = listed_path.replace(path, "");
 
-        	let filter = doc! { "original_path": listed_path.clone() };
-        	let cursor = database.collection("link").find_one(filter, None);
+            let filter = doc! { "original_path": listed_path.clone() };
+            let cursor = database.collection("link").find_one(filter, None);
 
-		    match cursor {
-		        Ok(result) => {
-		        	if result != None {
-		        		continue;
-		        	}
-		        },
-		        Err(_err) => ::std::process::exit(1),
-		    };
+            match cursor {
+                Ok(result) => {
+                    if result != None {
+                        continue;
+                    }
+                }
+                Err(_err) => ::std::process::exit(1),
+            };
 
             if entry.path_is_symlink() == false {
                 let get_brick = get_available_brick(brick_path.clone().to_string());
@@ -128,7 +137,7 @@ fn main() {
                 if md.is_dir() {
                     ::std::fs::create_dir_all(move_path).unwrap();
                 } else {
-                	// doesn't work with different mount point
+                    // doesn't work with different mount point
                     // ::std::fs::rename(listed_path.clone(), move_path.clone());
 
                     let doc = doc! {
@@ -140,25 +149,35 @@ fn main() {
 
                     let ok = database.collection("link").insert_one(doc, None);
                     match ok {
-                    	Ok(_) => {
-                    		println!("{}", "[META] Successfully save path to database...".blue().on_black());
-		                    let move_file = ::std::process::Command::new("/bin/mv")
-		                        .arg(listed_path.clone())
-		                        .arg(move_path.clone())
-		                        .status()
-		                        .expect("failed to execute process");
+                        Ok(_) => {
+                            println!(
+                                "{}",
+                                "[META] Successfully save path to database..."
+                                    .blue()
+                                    .on_black()
+                            );
+                            let move_file = ::std::process::Command::new("/bin/mv")
+                                .arg(listed_path.clone())
+                                .arg(move_path.clone())
+                                .status()
+                                .expect("failed to execute process");
 
-		                    if move_file.success() {
-		                    	println!("{}", "[MOVE] Successfully shard the file path...".green().on_black());
-		                    } else {
-		                    	println!("{}", "[ERROR] Failed to mv file...".red());
-		                    	::std::process::exit(1);
-		                    }
-                    	},
-                    	Err(_) => {
-                    		println!("{}", "[META] Failed to save meta data...".red());
-                    		::std::process::exit(1);
-                    	}
+                            if move_file.success() {
+                                println!(
+                                    "{}",
+                                    "[MOVE] Successfully shard the file path..."
+                                        .green()
+                                        .on_black()
+                                );
+                            } else {
+                                println!("{}", "[ERROR] Failed to mv file...".red());
+                                ::std::process::exit(1);
+                            }
+                        }
+                        Err(_) => {
+                            println!("{}", "[META] Failed to save meta data...".red());
+                            ::std::process::exit(1);
+                        }
                     }
                 }
             }
@@ -174,15 +193,20 @@ fn is_available(path: String) -> bool {
     let used = total_space - avail_space;
     let usage = used * 100 / total_space;
 
-    return usage < 95
+    return usage < 95;
 }
 
 fn get_available_brick(path: String) -> String {
-    for entry in WalkDir::new(path).min_depth(1).max_depth(1).into_iter().filter_map(|e| e.ok()) {
+    for entry in WalkDir::new(path)
+        .min_depth(1)
+        .max_depth(1)
+        .into_iter()
+        .filter_map(|e| e.ok())
+    {
         if entry.file_type().is_dir() {
             let brick_path = entry.path().display().to_string();
             if is_available(brick_path.clone()) {
-                return brick_path
+                return brick_path;
             }
         }
     }
