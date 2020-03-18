@@ -76,13 +76,12 @@ fn main() {
                 ::std::fs::create_dir_all(listed_folder).unwrap();
             } else {
                 // gerimis, mau balik, lanjut di rumah
-                let build_symlink_path = format!("{}{}", path, pure_path);
-                println!("[INFO] ln -s : {}", build_symlink_path);
+                println!("[INFO] ln -s : {}", pure_path);
 
                 let doc = doc! {
-                    "original_path": build_symlink_path.clone(),
-                    "shared_path": listed_path.clone(),
-                    "node_path": brick_path.clone(),
+                    "original_path": pure_path,
+                    "shared_path": listed_path,
+                    "node_path": brick_path,
                     "replication_node": "",
                 };
 
