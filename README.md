@@ -11,8 +11,6 @@ E2E Solution for your distributed file storage
 
 ## Prerequisite
 
-If you only use --cmd 0, you can pass this section
-
 1. Make sure you have running mongodb server, if not, [install mongodb](https://docs.mongodb.com/manual/tutorial/install-mongodb-on-ubuntu/)
 2. Setup mongodb url in [here](https://github.com/codenoid/Fido/blob/master/src/main.rs#L49)
 
