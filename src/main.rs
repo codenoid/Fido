@@ -48,9 +48,7 @@ fn main() {
     // Parse a connection string into an options struct.
     let mut client_options = match ClientOptions::parse("mongodb://localhost:27017") {
         Ok(expr) => expr,
-        Err(_e) => {
-            ::std::process::exit(1)
-        }
+        Err(_e) => ::std::process::exit(1),
     };
 
     // Manually set an option.
@@ -81,20 +79,28 @@ fn main() {
                 let build_symlink_path = format!("{}{}", path, pure_path);
                 println!("[INFO] ln -s : {}", build_symlink_path);
 
-                let args = &["-s", &listed_path, &build_symlink_path];
+                let doc = doc! {
+                    "original_path": build_symlink_path.clone(),
+                    "shared_path": listed_path.clone(),
+                    "node_path": brick_path.clone(),
+                    "replication_node": "",
+                };
 
-                let status = ::std::process::Command::new("/bin/ln")
-                    .args(args)
-                    .status()
-                    .expect("failed to execute process");
+                let ok = database.collection("link").insert_one(doc, None);
 
-                if status.success() {
-                    println!(
-                        "{}",
-                        "[INFO] Successfully linkin path...".green().on_black()
-                    );
-                } else {
-                    println!("{}", "[INFO] Path linkin failed...".blue());
+                match ok {
+                    Ok(_) => {
+                        println!(
+                            "{}",
+                            "[META] Successfully save path to database..."
+                                .blue()
+                                .on_black()
+                        );
+                    }
+                    Err(_) => {
+                        println!("{}", "[META] Failed to save meta data...".red());
+                        ::std::process::exit(1);
+                    }
                 }
             }
         }
