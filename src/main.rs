@@ -49,7 +49,6 @@ fn main() {
     let mut client_options = match ClientOptions::parse("mongodb://localhost:27017") {
         Ok(expr) => expr,
         Err(_e) => {
-            println!("{:?}", "EXITTTTT BRROOO");
             ::std::process::exit(1)
         }
     };
