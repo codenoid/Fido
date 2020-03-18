@@ -109,18 +109,6 @@ fn main() {
             let listed_path = entry.path().display().to_string();
             let pure_path = listed_path.replace(path, "");
 
-            let filter = doc! { "original_path": listed_path.clone() };
-            let cursor = database.collection("link").find_one(filter, None);
-
-            match cursor {
-                Ok(result) => {
-                    if result != None {
-                        continue;
-                    }
-                }
-                Err(_err) => ::std::process::exit(1),
-            };
-
             if entry.path_is_symlink() == false {
                 let get_brick = get_available_brick(brick_path.clone().to_string());
                 if get_brick == "" {
