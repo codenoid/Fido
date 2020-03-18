@@ -98,7 +98,6 @@ fn main() {
                     }
                     Err(_) => {
                         println!("{}", "[META] Failed to save meta data...".red());
-                        ::std::process::exit(1);
                     }
                 }
             }
@@ -180,7 +179,6 @@ fn main() {
                         }
                         Err(_) => {
                             println!("{}", "[META] Failed to save meta data...".red());
-                            ::std::process::exit(1);
                         }
                     }
                 }
