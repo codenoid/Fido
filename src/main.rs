@@ -49,6 +49,11 @@ fn main() {
         ::std::process::exit(1);
     }
 
+    if brick_path.clone().chars().last().unwrap() != '/' {
+        println!("the end of --path must be /");
+        ::std::process::exit(1);
+    }
+
     // Parse a connection string into an options struct.
     let mut client_options = match ClientOptions::parse("mongodb://localhost:27017") {
         Ok(expr) => expr,
@@ -84,12 +89,17 @@ fn main() {
                 // gerimis, mau balik, lanjut di rumah
                 println!("[INFO] ln -s : {}", pure_path);
 
+                let mime = match lookup(pure_path.clone()) {
+                    Some(result) => result,
+                    None => "",
+                };
+
                 let doc = doc! {
                     "original_path": pure_path.clone(),
                     "shared_path": listed_path,
                     "node_path": brick_path,
                     "replication_node": "",
-                    "mime_type": lookup(pure_path.clone()).unwrap(),
+                    "mime_type": mime,
                     "file_size": md.len() / 1000, // get kb value as int
                     "created_at": md.created().unwrap().duration_since(UNIX_EPOCH).unwrap().as_secs(),
                 };
@@ -167,12 +177,18 @@ fn main() {
                                                     .green()
                                                     .on_black()
                                             );
+
+                                            let mime = match lookup(pure_path.clone()) {
+                                                Some(result) => result,
+                                                None => "",
+                                            };
+
                                             let doc = doc! {
                                                 "original_path": pure_path.clone(),
                                                 "shared_path": move_path.clone(),
                                                 "node_path": get_brick.clone(),
                                                 "replication_node": "",
-                                                "mime_type": lookup(pure_path.clone()).unwrap(),
+                                                "mime_type": mime,
                                                 "file_size": md.len() / 1000, // get kb value as int
                                                 "created_at": md.created().unwrap().duration_since(UNIX_EPOCH).unwrap().as_secs(),
                                             };
