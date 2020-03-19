@@ -101,68 +101,70 @@ fn main() {
     }
 
     if cmd == "1" {
-        for entry in WalkDir::new(path)
-            .min_depth(1)
-            .into_iter()
-            .filter_map(|e| e.ok())
-        {
-            let listed_path = entry.path().display().to_string();
-            let pure_path = listed_path.replace(path, "");
+        loop {
+            for entry in WalkDir::new(path)
+                .min_depth(1)
+                .into_iter()
+                .filter_map(|e| e.ok())
+            {
+                let listed_path = entry.path().display().to_string();
+                let pure_path = listed_path.replace(path, "");
 
-            if entry.path_is_symlink() == false {
-                let get_brick = get_available_brick(brick_path.clone().to_string());
-                if get_brick == "" {
-                    println!("FATAL!!!! NEED MORE BRICK !!!");
-                    ::std::process::exit(1);
-                }
+                if entry.path_is_symlink() == false {
+                    let get_brick = get_available_brick(brick_path.clone().to_string());
+                    if get_brick == "" {
+                        println!("FATAL!!!! NEED MORE BRICK !!!");
+                        ::std::process::exit(1);
+                    }
 
-                // brick_path + pure path
-                let move_path = format!("{}/{}", get_brick, pure_path);
+                    // brick_path + pure path
+                    let move_path = format!("{}/{}", get_brick, pure_path);
 
-                let md = ::std::fs::metadata(listed_path.clone()).unwrap();
+                    let md = ::std::fs::metadata(listed_path.clone()).unwrap();
 
-                if md.is_dir() {
-                    ::std::fs::create_dir_all(move_path).unwrap();
-                } else {
-                    // doesn't work with different mount point
-                    // ::std::fs::rename(listed_path.clone(), move_path.clone());
+                    if md.is_dir() {
+                        ::std::fs::create_dir_all(move_path).unwrap();
+                    } else {
+                        // doesn't work with different mount point
+                        // ::std::fs::rename(listed_path.clone(), move_path.clone());
 
-                    let doc = doc! {
-                        "original_path": listed_path.clone(),
-                        "shared_path": move_path.clone(),
-                        "node_path": get_brick.clone(),
-                        "replication_node": "",
-                    };
+                        let doc = doc! {
+                            "original_path": pure_path.clone(),
+                            "shared_path": move_path.clone(),
+                            "node_path": get_brick.clone(),
+                            "replication_node": "",
+                        };
 
-                    let ok = database.collection("link").insert_one(doc, None);
-                    match ok {
-                        Ok(_) => {
-                            println!(
-                                "{}",
-                                "[META] Successfully save path to database..."
-                                    .blue()
-                                    .on_black()
-                            );
-                            let move_file = ::std::process::Command::new("/bin/mv")
-                                .arg(listed_path.clone())
-                                .arg(move_path.clone())
-                                .status()
-                                .expect("failed to execute process");
-
-                            if move_file.success() {
+                        let ok = database.collection("link").insert_one(doc, None);
+                        match ok {
+                            Ok(_) => {
                                 println!(
                                     "{}",
-                                    "[MOVE] Successfully shard the file path..."
-                                        .green()
+                                    "[META] Successfully save path to database..."
+                                        .blue()
                                         .on_black()
                                 );
-                            } else {
-                                println!("{}", "[ERROR] Failed to mv file...".red());
-                                ::std::process::exit(1);
+                                let move_file = ::std::process::Command::new("/bin/mv")
+                                    .arg(listed_path.clone())
+                                    .arg(move_path.clone())
+                                    .status()
+                                    .expect("failed to execute process");
+
+                                if move_file.success() {
+                                    println!(
+                                        "{}",
+                                        "[MOVE] Successfully shard the file path..."
+                                            .green()
+                                            .on_black()
+                                    );
+                                } else {
+                                    println!("{}", "[ERROR] Failed to mv file...".red());
+                                    ::std::process::exit(1);
+                                }
                             }
-                        }
-                        Err(_) => {
-                            println!("{}", "[META] Failed to save meta data...".red());
+                            Err(_) => {
+                                println!("{}", "[META] Failed to save meta data...".red());
+                            }
                         }
                     }
                 }
