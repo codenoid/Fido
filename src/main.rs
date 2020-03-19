@@ -1,8 +1,12 @@
 use bson::doc;
 use clap::{App, Arg};
 use colored::*;
+use mime_db::lookup;
 use mongodb::{options::ClientOptions, Client};
 use nix::sys::statvfs::statvfs;
+#[allow(dead_code)]
+#[allow(unreachable_code)]
+use std::time::UNIX_EPOCH;
 use walkdir::WalkDir;
 
 macro_rules! cast {
@@ -67,18 +71,27 @@ fn main() {
             .into_iter()
             .filter_map(|e| e.ok())
         {
+            if brick.path_is_symlink() {
+                continue;
+            }
             let listed_path = brick.path().display().to_string();
             let pure_path = listed_path.replace(brick_path.clone(), "");
 
             if !brick.file_type().is_dir() {
+                // get path metadata
+                let md = ::std::fs::metadata(listed_path.clone()).unwrap();
+
                 // gerimis, mau balik, lanjut di rumah
                 println!("[INFO] ln -s : {}", pure_path);
 
                 let doc = doc! {
-                    "original_path": pure_path,
+                    "original_path": pure_path.clone(),
                     "shared_path": listed_path,
                     "node_path": brick_path,
                     "replication_node": "",
+                    "mime_type": lookup(pure_path.clone()).unwrap(),
+                    "file_size": md.len() / 1000, // get kb value as int
+                    "created_at": md.created().unwrap().duration_since(UNIX_EPOCH).unwrap().as_secs(),
                 };
 
                 let ok = database.collection("link").insert_one(doc, None);
@@ -120,6 +133,7 @@ fn main() {
                     // brick_path + pure path
                     let move_path = format!("{}/{}", get_brick, pure_path);
 
+                    // get path metadata
                     let md = ::std::fs::metadata(listed_path.clone()).unwrap();
 
                     if md.is_dir() {
@@ -128,43 +142,69 @@ fn main() {
                         // doesn't work with different mount point
                         // ::std::fs::rename(listed_path.clone(), move_path.clone());
 
-                        let doc = doc! {
-                            "original_path": pure_path.clone(),
-                            "shared_path": move_path.clone(),
-                            "node_path": get_brick.clone(),
-                            "replication_node": "",
-                        };
+                        if let Ok(time) = md.modified() {
+                            match time.elapsed() {
+                                Ok(diff) => {
+                                    // if file hasn't been modified since 3 minute ago
+                                    // then proceed the file
+                                    if diff.as_secs() > 150 {
+                                        println!(
+                                            "[MOVING] \nFROM {:?} \nTO {:?}",
+                                            listed_path.clone(),
+                                            move_path.clone()
+                                        );
 
-                        let ok = database.collection("link").insert_one(doc, None);
-                        match ok {
-                            Ok(_) => {
-                                println!(
-                                    "{}",
-                                    "[META] Successfully save path to database..."
-                                        .blue()
-                                        .on_black()
-                                );
-                                let move_file = ::std::process::Command::new("/bin/mv")
-                                    .arg(listed_path.clone())
-                                    .arg(move_path.clone())
-                                    .status()
-                                    .expect("failed to execute process");
+                                        let move_file = ::std::process::Command::new("/bin/mv")
+                                            .arg(listed_path.clone())
+                                            .arg(move_path.clone())
+                                            .status()
+                                            .expect("failed to execute process");
 
-                                if move_file.success() {
-                                    println!(
-                                        "{}",
-                                        "[MOVE] Successfully shard the file path..."
-                                            .green()
-                                            .on_black()
-                                    );
-                                } else {
-                                    println!("{}", "[ERROR] Failed to mv file...".red());
-                                    ::std::process::exit(1);
+                                        if move_file.success() {
+                                            println!(
+                                                "{}",
+                                                "[MOVE] Successfully shard the file path..."
+                                                    .green()
+                                                    .on_black()
+                                            );
+                                            let doc = doc! {
+                                                "original_path": pure_path.clone(),
+                                                "shared_path": move_path.clone(),
+                                                "node_path": get_brick.clone(),
+                                                "replication_node": "",
+                                                "mime_type": lookup(pure_path.clone()).unwrap(),
+                                                "file_size": md.len() / 1000, // get kb value as int
+                                                "created_at": md.created().unwrap().duration_since(UNIX_EPOCH).unwrap().as_secs(),
+                                            };
+
+                                            let ok =
+                                                database.collection("link").insert_one(doc, None);
+                                            match ok {
+                                                Ok(_) => {
+                                                    println!(
+	                                                    "{}",
+	                                                    "[META] Successfully save path to database..."
+	                                                        .blue()
+	                                                        .on_black()
+	                                                );
+                                                }
+                                                Err(_) => {
+                                                    println!(
+                                                        "{}",
+                                                        "[META] Failed to save meta data...".red()
+                                                    );
+                                                }
+                                            }
+                                        } else {
+                                            println!("{}", "[ERROR] Failed to mv file...".red());
+                                            ::std::process::exit(1);
+                                        }
+                                    }
                                 }
+                                Err(_err) => {}
                             }
-                            Err(_) => {
-                                println!("{}", "[META] Failed to save meta data...".red());
-                            }
+                        } else {
+                            println!("Not supported on this platform");
                         }
                     }
                 }
