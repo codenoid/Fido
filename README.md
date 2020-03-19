@@ -1,4 +1,4 @@
-# Fido
+# Fido [Active Development]
 E2E Solution for your distributed file storage
 
 ## Real-World use case
