@@ -50,7 +50,7 @@ fn main() {
     }
 
     if brick_path.clone().chars().last().unwrap() != '/' {
-        println!("the end of --path must be /");
+        println!("the end of --bricks must be /");
         ::std::process::exit(1);
     }
 
